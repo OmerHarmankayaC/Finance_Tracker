@@ -57,6 +57,21 @@ def list_transactions():
     for row in rows:
         print(row)
 
+def delete_transaction():
+    id = input("Please enter transaction ID to delete: ")
+
+    if (id.isdigit == False):
+        print("Invalid ID")
+        return
+
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+
+    c.execute("DELETE FROM transactions WHERE id = ?", (id))
+
+    conn.commit()
+    conn.close()
+
 if __name__ == "__main__":
     init_db()
     print("Database initialized successfully!")
@@ -76,6 +91,9 @@ while True:
 
     elif (opr == "1"):
         add_transaction()
+
+    elif (opr == "2"):
+        delete_transaction()
     
     elif (opr == "3"):
         list_transactions()
