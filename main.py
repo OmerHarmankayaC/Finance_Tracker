@@ -35,12 +35,27 @@ def add_transaction():
     conn = sqlite3.connect('finance.db')
     c = conn.cursor()
 
-    c.execute("INSERT INTO transactions (type, amount, category, date, description, created_at) VALUES (?, ?, ?, ?, ?, ?)", (amount, type, category, date, description, created_at))
+    c.execute("""INSERT INTO transactions (type, amount, category, date, description, created_at)
+              VALUES (?, ?, ?, ?, ?, ?)""", 
+              (amount, type, category, date, description, created_at))
     conn.commit()
     conn.close()
 
     print("Transaction added succesfully!")
 
+def list_transactions():
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+
+    c.execute("SELECT * FROM transactions")
+    rows = c.fetchall()
+
+    if not rows:
+        print("There aren't any transactions!")
+        return
+    
+    for row in rows:
+        print(row)
 
 if __name__ == "__main__":
     init_db()
@@ -51,12 +66,20 @@ while True:
     print("2-Remove a transaction")
     print("3-See your transactions")
     print("4-Edit your transactions")
+    print("5-Exit")
 
     opr = input("Please enter your operaiton: ")
 
-    if (opr.isdigit == False or int(opr) < 1 or int(opr) > 4):
+    if (opr.isdigit == False or int(opr) < 1 or int(opr) > 5):
         print("Please enter a valid operation!")
         break
 
     elif (opr == "1"):
         add_transaction()
+    
+    elif (opr == "3"):
+        list_transactions()
+
+    elif (opr == "5"):
+        print("Terminating the program...")
+        break
