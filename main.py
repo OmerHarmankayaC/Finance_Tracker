@@ -24,6 +24,39 @@ def init_db():
         if conn:
             conn.close()
 
+def add_transaction():
+    type = input("Would you like to add an income or an expense (I/E): ").lower()
+    amount = float(input("Amount: "))
+    category = input("Category: ").lower()
+    date = input("Date (DD-MM-YYYY): ")
+    description = input("Description (optional): ")
+    created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+
+    c.execute("INSERT INTO transactions (type, amount, category, date, description, created_at) VALUES (?, ?, ?, ?, ?, ?)", (amount, type, category, date, description, created_at))
+    conn.commit()
+    conn.close()
+
+    print("Transaction added succesfully!")
+
+
 if __name__ == "__main__":
     init_db()
     print("Database initialized successfully!")
+
+while True:
+    print("1-Add an expense/income")
+    print("2-Remove a transaction")
+    print("3-See your transactions")
+    print("4-Edit your transactions")
+
+    opr = input("Please enter your operaiton: ")
+
+    if (opr.isdigit == False or int(opr) < 1 or int(opr) > 4):
+        print("Please enter a valid operation!")
+        break
+
+    elif (opr == "1"):
+        add_transaction()
