@@ -135,6 +135,57 @@ def show_summary():
     print("Total expenses:", expenses)
     print("Balance:", balance)
 
+def edit_transaction():
+   while True:
+        id = input("Enter transaction ID: ")
+        
+        conn = sqlite3.connect('finance.db')
+        c = conn.cursor()
+
+        while True:
+            print("1-Amount")
+            print("2-Type")
+            print("3-Category")
+            print("4-Date")
+            print("5-Description")
+            print("6-Edit another transaction")
+            print("7-Return to the main menu")
+
+            eOpr = input("Please enter your operation: ")
+            
+            if (eOpr.isdigit() == False or int(eOpr) < 1 or int(eOpr) > 7):
+                print("Please enter a valid operation!")
+                break
+            elif (eOpr == "1"):
+                newAmount = input("New amount: ")
+                c.execute ("UPDATE transactions  SET amount = ? WHERE id = ?", (newAmount, id))
+            
+            elif (eOpr == "2"):
+                newType = input("New type: ")
+                c.execute ("UPDATE transactions SET type = ? WHERE id = ?", (newType, id))
+
+            elif (eOpr == "3"):
+                newCategory = input("New category: ")
+                c.execute ("UPDATE transactions SET category = ? WHERE id = ?", (newCategory, id))
+        
+            elif (eOpr == "4"):
+                newDate = input("New date (DD-MM-YYYY): ")
+                c.execute ("UPDATE transactions SET date = ? WHERE id = ?", (newDate, id))
+
+            elif (eOpr == "5"):
+                newDescription = input("New description: ")
+                c.execute ("UPDATE transactions SET description = ? WHERE id = ?", (newDescription, id))
+            
+            elif (eOpr == "6"):
+                break
+
+            elif (eOpr == "7"):
+                print("Returning to the main menu.")
+                return
+            
+            conn.commit()
+        conn.close()
+
 if __name__ == "__main__":
     init_db()
     print("Database initialized successfully!")
@@ -151,7 +202,7 @@ while True:
 
     if (opr.isdigit() == False or int(opr) < 1 or int(opr) > 6):
         print("Please enter a valid operation!")
-        break
+        continue
 
     elif (opr == "1"):
         add_transaction()
@@ -161,6 +212,9 @@ while True:
     
     elif (opr == "3"):
        list_transactions()
+
+    elif (opr == "4"):
+        edit_transaction()
 
     elif (opr == "5"):
         show_summary()
