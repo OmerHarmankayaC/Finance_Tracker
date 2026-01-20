@@ -9,7 +9,7 @@ def init_db():
         c.execute("""CREATE TABLE IF NOT EXISTS transactions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 amount REAL NOT NULL,
-                type  TEXT NOT NULL,
+                t_type  TEXT NOT NULL,
                 category TEXT NOT NULL,
                 date TEXT NOT NULL,
                 description TEXT,
@@ -24,18 +24,62 @@ def init_db():
         if conn:
             conn.close()
 
+def is_date_valid(date):
+    try:
+        datetime.strptime(date, "%Y-%m-%d")
+        return True
+    
+    except ValueError:
+        return False
+
 def add_transaction():
-    transaction_type = input("Would you like to add an income or an expense (income/expense): ").lower()
-    amount = float(input("Amount: "))
-    category = input("Category: ").lower()
-    date = input("Date (DD-MM-YYYY): ")
+    while True:
+        transaction_type = input("Would you like to add an income or an expense (income/expense): ").lower()
+        
+        if (transaction_type == "income" or transaction_type == "expense"):
+            break
+
+        else:
+            print("Please enter a valid type!")
+    
+    while True:
+        try:
+            amount = float(input("Amount: "))
+            if (amount <= 0):
+                print("Amount must be positive!")
+                continue
+            break
+        
+        except ValueError:
+            print("Please enter a valid number")
+        
+    while True:
+        category = input("Category: ").lower()
+
+        if not category.strip():
+            print("Please enter a category!")
+        else:
+            break
+    
+    while True:
+        date = input("Date (YYYY-MM-DD): ")
+
+        if not date.strip():
+            print("Please enter a date!")
+        
+        elif not is_date_valid(date):
+            print("Please enter a valid date!")
+        
+        else:
+            break
+
     description = input("Description (optional): ")
     created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     conn = sqlite3.connect('finance.db')
     c = conn.cursor()
 
-    c.execute("""INSERT INTO transactions (type, amount, category, date, description, created_at)
+    c.execute("""INSERT INTO transactions (t_type, amount, category, date, description, created_at)
               VALUES (?, ?, ?, ?, ?, ?)""", 
               (transaction_type, amount, category, date, description, created_at))
     conn.commit()
@@ -44,86 +88,110 @@ def add_transaction():
     print("Transaction added succesfully!")
 
 def list_transactions():
-    print("1-See all your transactions")
-    print("2-See your incomes")
-    print("3-See your expenses")
-    print("4-Return to main menu")
-
-    seeOpr = input("Please enter your operation: ")
-
     conn = sqlite3.connect('finance.db')
     c = conn.cursor()
 
-    if (seeOpr.isdigit() == False or int(seeOpr) < 1 or int(seeOpr) > 4):
-        print("Please enter a valid operation!")
-    
-    elif (seeOpr == "4"):
-        print("Returning to the main menu.")
-        conn.close()
-        return
+    try:
+        print("1-See all your transactions")
+        print("2-See your incomes")
+        print("3-See your expenses")
+        print("4-Return to main menu")
+
+        seeOpr = input("Please enter your operation: ")
+
+        if (seeOpr.isdigit() == False or int(seeOpr) < 1 or int(seeOpr) > 4):
+            print("Please enter a valid operation!")
         
-    elif (seeOpr == "1"):
-
-        c.execute("SELECT * FROM transactions")
-        rows = c.fetchall()
-
-        if not rows:
-            print("There aren't any transactions!")
-            conn.close()
+        elif (seeOpr == "4"):
+            print("Returning to the main menu.")
             return
+            
+        elif (seeOpr == "1"):
 
-        for row in rows:
-            print(row)
+            c.execute("SELECT * FROM transactions")
+            rows = c.fetchall()
 
-        conn.close()
+            if not rows:
+                print("There aren't any transactions!")
+                return
 
-    elif (seeOpr == "2" or seeOpr == "3"):
-        if (seeOpr == "2"):
-            t_type = "income"
-        else:
-            t_type = "expense"
+            for row in rows:
+                print(row)
 
-        c.execute("SELECT * FROM transactions WHERE type = ?", (t_type,))
-
-        rows = c.fetchall()
-
-        if not rows:
+        elif (seeOpr == "2" or seeOpr == "3"):
             if (seeOpr == "2"):
-                print("There aren't any incomes!")
+                t_type = "income"
             else:
-                print("There aren't any expenses!")
-            conn.close()
-            return
-        
-        for row in rows:
-            print(row)
-        
+                t_type = "expense"
+
+            c.execute("SELECT * FROM transactions WHERE t_type = ?", (t_type,))
+
+            rows = c.fetchall()
+
+            if not rows:
+                if (seeOpr == "2"):
+                    print("There aren't any incomes!")
+                else:
+                    print("There aren't any expenses!")
+            
+                return
+            
+            for row in rows:
+                print(row)
+            
+    except sqlite3.Error as e:
+        print("Database error found: ", e)
+        return
+    
+    finally:
         conn.close()
 
 def delete_transaction():
-    id = input("Please enter transaction ID to delete: ")
+    try:
+        conn = sqlite3.connect('finance.db')
+        c = conn.cursor()
+        
+        while True:
+            print("Please enter transaction ID to delete")
+            id = input("Write \"exit\" to return to the main menu: ")
 
-    if (id.isdigit() == False):
-        print("Invalid ID")
+            if (id.lower() == "exit"):
+                print("Returning to the main menu.")
+                return
+
+            if not id.isdigit() or int(id) <= 0:
+                print("Invalid ID")
+                continue
+
+            c.execute("SELECT * FROM transactions WHERE id = ?", (id,))
+
+            row = c.fetchone()
+
+            if row == None:
+                print("There are no transactions with this ID!")
+            
+            else:
+                c.execute("DELETE FROM transactions WHERE id = ?", (id,))
+                conn.commit()
+                print("Transaction deleted successfully!")
+                break
+    
+    except sqlite3.Error as e:
+        print("Databese error found: ", e)
         return
 
-    conn = sqlite3.connect('finance.db')
-    c = conn.cursor()
-
-    c.execute("DELETE FROM transactions WHERE id = ?", (id,))
-
-    conn.commit()
-    conn.close()
+    finally:
+        conn.close()
 
 def show_summary():
     conn = sqlite3.connect('finance.db')
     c = conn.cursor()
 
-    c.execute("SELECT SUM(amount) FROM transactions WHERE type = 'income'")
+    c.execute("SELECT SUM(amount) FROM transactions WHERE t_type = 'income'")
 
     incomes = c.fetchone()[0] or 0
 
-    c.execute("SELECT SUM(amount) FROM transactions WHERE type = 'expense'")
+    c.execute("SELECT SUM(amount) FROM transactions WHERE t_type = 'expense'")
 
     expenses = c.fetchone()[0] or 0
 
@@ -136,54 +204,107 @@ def show_summary():
     print("Balance:", balance)
 
 def edit_transaction():
-   while True:
-        id = input("Enter transaction ID: ")
-        
+    try:
         conn = sqlite3.connect('finance.db')
         c = conn.cursor()
-
-        while True:
-            print("1-Amount")
-            print("2-Type")
-            print("3-Category")
-            print("4-Date")
-            print("5-Description")
-            print("6-Edit another transaction")
-            print("7-Return to the main menu")
-
-            eOpr = input("Please enter your operation: ")
-            
-            if (eOpr.isdigit() == False or int(eOpr) < 1 or int(eOpr) > 7):
-                print("Please enter a valid operation!")
-                break
-            elif (eOpr == "1"):
-                newAmount = input("New amount: ")
-                c.execute ("UPDATE transactions  SET amount = ? WHERE id = ?", (newAmount, id))
-            
-            elif (eOpr == "2"):
-                newType = input("New type: ")
-                c.execute ("UPDATE transactions SET type = ? WHERE id = ?", (newType, id))
-
-            elif (eOpr == "3"):
-                newCategory = input("New category: ")
-                c.execute ("UPDATE transactions SET category = ? WHERE id = ?", (newCategory, id))
         
-            elif (eOpr == "4"):
-                newDate = input("New date (DD-MM-YYYY): ")
-                c.execute ("UPDATE transactions SET date = ? WHERE id = ?", (newDate, id))
-
-            elif (eOpr == "5"):
-                newDescription = input("New description: ")
-                c.execute ("UPDATE transactions SET description = ? WHERE id = ?", (newDescription, id))
+        while True:
+            id = input("Enter transaction ID: ")
             
-            elif (eOpr == "6"):
+            
+
+            if not id.isdigit() or int(id) <= 0:
+                print("Invalid ID")
                 break
-
-            elif (eOpr == "7"):
-                print("Returning to the main menu.")
-                return
             
-            conn.commit()
+            c.execute("SELECT * FROM transactions WHERE id = ?", (id,))
+
+            row = c.fetchone()
+
+            if row == None:
+                print("There are no transactions with this ID!")
+
+            else:
+
+                while True:
+                    print("1-Amount")
+                    print("2-Type")
+                    print("3-Category")
+                    print("4-Date")
+                    print("5-Description")
+                    print("6-Edit another transaction")
+                    print("7-Return to the main menu")
+
+                    eOpr = input("Please enter your operation: ")
+                    
+                    if (eOpr.isdigit() == False or int(eOpr) < 1 or int(eOpr) > 7):
+                        print("Please enter a valid operation!")
+                        break
+                    elif (eOpr == "1"):
+                        while True:
+                            try:
+                                newAmount = float(input("Amount: "))
+                                if (newAmount <= 0):
+                                    print("Amount must be positive!")
+                                    continue
+                                break
+                            
+                            except ValueError:
+                                print("Please enter a valid number")
+                       
+                        c.execute ("UPDATE transactions  SET amount = ? WHERE id = ?", (newAmount, id))
+                    
+                    elif (eOpr == "2"):
+                        while True:
+                            newType = input("Would you like to add an income or an expense (income/expense): ").lower()
+            
+                            if (newType == "income" or newType == "expense"):
+                                break
+
+                            else:
+                                print("Please enter a valid type!")
+                        
+                        c.execute ("UPDATE transactions SET t_type = ? WHERE id = ?", (newType, id))
+
+                    elif (eOpr == "3"):
+                        newCategory = input("New category: ")
+                        c.execute ("UPDATE transactions SET category = ? WHERE id = ?", (newCategory, id))
+                
+                    elif (eOpr == "4"):
+
+                        while True:
+                            
+                            newDate = input("New date (YYYY-MM-DD): ")
+                            
+                            if not newDate.strip():
+                                print("Please enter a date!")
+        
+                            elif not is_date_valid(newDate):
+                                print("Please enter a valid date!")
+        
+                            else:
+                                break
+                
+                        c.execute ("UPDATE transactions SET date = ? WHERE id = ?", (newDate, id))
+
+                    elif (eOpr == "5"):
+                        newDescription = input("New description: ")
+                        c.execute ("UPDATE transactions SET description = ? WHERE id = ?", (newDescription, id))
+                    
+                    elif (eOpr == "6"):
+                        break
+
+                    elif (eOpr == "7"):
+                        print("Returning to the main menu.")
+                        return
+                    
+                    conn.commit()
+    
+    except sqlite3.Error as e:
+        print("Database error found: ", e)
+        return
+
+    finally:
         conn.close()
 
 if __name__ == "__main__":
