@@ -115,6 +115,26 @@ def delete_transaction():
     conn.commit()
     conn.close()
 
+def show_summary():
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+
+    c.execute("SELECT SUM(amount) FROM transactions WHERE type = 'income'")
+
+    incomes = c.fetchone()[0] or 0
+
+    c.execute("SELECT SUM(amount) FROM transactions WHERE type = 'expense'")
+
+    expenses = c.fetchone()[0] or 0
+
+    balance = incomes - expenses
+
+    conn.close()
+
+    print("Total income:", incomes)
+    print("Total expenses:", expenses)
+    print("Balance:", balance)
+
 if __name__ == "__main__":
     init_db()
     print("Database initialized successfully!")
@@ -124,11 +144,12 @@ while True:
     print("2-Remove a transaction")
     print("3-See your transactions")
     print("4-Edit your transactions")
-    print("5-Exit")
+    print("5-Show summary")
+    print("6-Exit")
 
     opr = input("Please enter your operaiton: ")
 
-    if (opr.isdigit() == False or int(opr) < 1 or int(opr) > 5):
+    if (opr.isdigit() == False or int(opr) < 1 or int(opr) > 6):
         print("Please enter a valid operation!")
         break
 
@@ -142,5 +163,8 @@ while True:
        list_transactions()
 
     elif (opr == "5"):
+        show_summary()
+
+    elif (opr == "6"):
         print("Terminating the program...")
         break
